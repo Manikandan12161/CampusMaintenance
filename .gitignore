@@ -1,0 +1,20 @@
+# SQLite Databases
+campus_maintenance.db
+data/campus_maintenance.db
+
+# Python bytecode & cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+env/
+venv/
+.env
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+htmlcov/

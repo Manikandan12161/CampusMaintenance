@@ -1,0 +1,32 @@
+---
+# ==============================================================================
+# SMART CAMPUS MAINTENANCE REQUEST SYSTEM - ANSIBLE DEPLOYMENT PLAYBOOK
+# Module: community.docker.docker_container
+# Target Container: campus-maintenance-ansible
+# Image: campus-maintenance-ci
+# Host Port: 5002 -> Container Port: 5000
+# Persistent Volume: campus_maintenance_data -> /app/data
+# ==============================================================================
+
+- name: Deploy Smart Campus Maintenance Request System Container
+  hosts: all
+  become: false
+  tasks:
+    - name: Ensure Docker volume for persistent SQLite database exists
+      community.docker.docker_volume:
+        name: campus_maintenance_data
+        state: present
+
+    - name: Deploy Campus Maintenance application container
+      community.docker.docker_container:
+        name: campus-maintenance-ansible
+        image: campus-maintenance-ci
+        state: "{{ container_state | default('started') }}"
+        restart_policy: unless-stopped
+        ports:
+          - "5002:5000"
+        volumes:
+          - "campus_maintenance_data:/app/data"
+        env:
+          PYTHONUNBUFFERED: "1"
+          FLASK_ENV: "production"

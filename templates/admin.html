@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Smart Campus Maintenance Request System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- NAVIGATION BAR -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-link">
+                <div class="brand-icon">🏛️</div>
+                <div class="brand-text">
+                    <h1>CampusFix</h1>
+                    <span>Smart Maintenance System</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li class="nav-item"><a href="{{ url_for('index') }}" id="nav-home">Home</a></li>
+                <li class="nav-item"><a href="{{ url_for('report') }}" id="nav-report">Report Issue</a></li>
+                <li class="nav-item"><a href="{{ url_for('track') }}" id="nav-track">Track Request</a></li>
+                <li class="nav-item admin-btn"><a href="{{ url_for('admin') }}" class="active" id="nav-admin">Admin Dashboard</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-wrapper">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="alert-close">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- DASHBOARD HEADER -->
+        <div class="section-header">
+            <div>
+                <h2>Facilities Management Dashboard</h2>
+                <p>Monitor campus tickets, assign field technicians, and update resolution lifecycle states.</p>
+            </div>
+            <a href="{{ url_for('report') }}" class="btn btn-primary btn-sm">+ Log New Ticket</a>
+        </div>
+
+        <!-- 4 REQUIRED SUMMARY CARDS -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">📊</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-total">{{ total_requests }}</div>
+                    <div class="stat-label">Total Requests</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon amber">⏳</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-pending">{{ pending_count }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon purple">👤</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-assigned">{{ assigned_count }}</div>
+                    <div class="stat-label">Assigned</div>
+                </div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value" id="stat-resolved">{{ resolved_count }}</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TOOLBAR: FILTER PILLS & SEARCH -->
+        <div class="admin-toolbar">
+            <div class="filter-pills">
+                <a href="{{ url_for('admin') }}" class="filter-pill {% if not filter_status %}active{% endif %}">
+                    All ({{ total_requests }})
+                </a>
+                <a href="{{ url_for('admin', status='Pending') }}" class="filter-pill {% if filter_status == 'Pending' %}active{% endif %}">
+                    Pending ({{ pending_count }})
+                </a>
+                <a href="{{ url_for('admin', status='Assigned') }}" class="filter-pill {% if filter_status == 'Assigned' %}active{% endif %}">
+                    Assigned ({{ assigned_count }})
+                </a>
+                <a href="{{ url_for('admin', status='In Progress') }}" class="filter-pill {% if filter_status == 'In Progress' %}active{% endif %}">
+                    In Progress ({{ in_progress_count }})
+                </a>
+                <a href="{{ url_for('admin', status='Resolved') }}" class="filter-pill {% if filter_status == 'Resolved' %}active{% endif %}">
+                    Resolved ({{ resolved_count }})
+                </a>
+            </div>
+
+            <div style="flex: 1; max-width: 320px;">
+                <input type="text"
+                       id="tableSearchInput"
+                       class="form-control"
+                       style="padding: 0.45rem 0.85rem; font-size: 0.85rem;"
+                       placeholder="Filter table rows in real-time...">
+            </div>
+        </div>
+
+        <!-- REQUESTS DATA TABLE -->
+        <div class="table-card">
+            {% if requests %}
+                <div class="table-responsive">
+                    <table class="data-table" id="adminDataTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Issue Type</th>
+                                <th>Location</th>
+                                <th>Description</th>
+                                <th>Priority</th>
+                                <th>Date / Time</th>
+                                <th>Current Status</th>
+                                <th>Update Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="adminTableBody">
+                            {% for req in requests %}
+                                <tr class="request-row" id="row-{{ req['id'] }}">
+                                    <!-- Request ID -->
+                                    <td>
+                                        <a href="{{ url_for('track', request_id=req['id']) }}" style="font-weight: 700; color: var(--brand-blue); text-decoration: none;">
+                                            #{{ req['id'] }}
+                                        </a>
+                                    </td>
+
+                                    <!-- Issue Type -->
+                                    <td style="font-weight: 600;">
+                                        {{ req['issue_type'] }}
+                                    </td>
+
+                                    <!-- Location -->
+                                    <td>
+                                        <span title="{{ req['location'] }}">📍 {{ req['location'] }}</span>
+                                    </td>
+
+                                    <!-- Description -->
+                                    <td class="desc-cell" title="{{ req['description'] }}">
+                                        {{ req['description'] }}
+                                    </td>
+
+                                    <!-- Priority -->
+                                    <td>
+                                        <span class="badge badge-priority-{{ req['priority'].lower() }}">
+                                            {{ req['priority'] }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Date / Time -->
+                                    <td style="white-space: nowrap; font-size: 0.8rem; color: var(--primary-600);">
+                                        {{ req['created_at']|format_datetime }}
+                                    </td>
+
+                                    <!-- Current Status -->
+                                    <td>
+                                        <span class="badge badge-status-{{ req['status'].lower().replace(' ', '-') }}">
+                                            ● {{ req['status'] }}
+                                        </span>
+                                    </td>
+
+                                    <!-- Update Status Action -->
+                                    <td>
+                                        <form action="{{ url_for('update_status') }}" method="POST" class="inline-status-form">
+                                            <input type="hidden" name="request_id" value="{{ req['id'] }}">
+                                            <select name="status" class="inline-status-select" aria-label="Select new status for ticket #{{ req['id'] }}">
+                                                {% for status_opt in valid_statuses %}
+                                                    <option value="{{ status_opt }}" {% if req['status'] == status_opt %}selected{% endif %}>
+                                                        {{ status_opt }}
+                                                    </option>
+                                                {% endfor %}
+                                            </select>
+                                            <button type="submit" class="btn btn-outline btn-sm" title="Apply Status Change">
+                                                Save
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="empty-state">
+                    <div class="empty-icon">📂</div>
+                    <h3 style="font-family: var(--font-heading); margin-bottom: 0.5rem; color: var(--primary-800);">No Maintenance Requests Found</h3>
+                    <p style="font-size: 0.9rem; margin-bottom: 1.5rem;">
+                        {% if filter_status %}
+                            There are currently no tickets matching the "<strong>{{ filter_status }}</strong>" filter.
+                        {% else %}
+                            No maintenance requests have been recorded yet.
+                        {% endif %}
+                    </p>
+                    <a href="{{ url_for('report') }}" class="btn btn-primary btn-sm">Create First Maintenance Ticket</a>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <strong>Smart Campus Maintenance Request System</strong> &copy; 2026. All rights reserved.
+            </div>
+            <div class="footer-devops-badge">
+                <span>Docker • Jenkins • Pytest • Ansible • SQLite</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

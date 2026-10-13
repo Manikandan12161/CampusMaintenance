@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Smart Campus Maintenance Request System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- NAVIGATION BAR -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-link" id="brand-link">
+                <div class="brand-icon">🏛️</div>
+                <div class="brand-text">
+                    <h1>CampusFix</h1>
+                    <span>Smart Maintenance System</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li class="nav-item"><a href="{{ url_for('index') }}" class="active" id="nav-home">Home</a></li>
+                <li class="nav-item"><a href="{{ url_for('report') }}" id="nav-report">Report Issue</a></li>
+                <li class="nav-item"><a href="{{ url_for('track') }}" id="nav-track">Track Request</a></li>
+                <li class="nav-item admin-btn"><a href="{{ url_for('admin') }}" id="nav-admin">Admin Dashboard</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-wrapper">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="alert-close">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- HERO SECTION -->
+        <section class="hero-card">
+            <div class="hero-tag">⚡ Automated Campus Facility Management</div>
+            <h2 class="hero-title">Report, Track & Resolve Campus Facility Issues in Real Time</h2>
+            <p class="hero-subtitle">
+                A centralized digital portal for university students, faculty, and administrators to ensure world-class campus infrastructure, safety, and rapid repairs.
+            </p>
+            <div class="hero-actions">
+                <a href="{{ url_for('report') }}" class="btn btn-primary" id="hero-report-btn">
+                    <span>🔧</span> Report a Maintenance Issue
+                </a>
+                <a href="{{ url_for('track') }}" class="btn btn-secondary" id="hero-track-btn">
+                    <span>🔍</span> Track Request Status
+                </a>
+                <a href="{{ url_for('admin') }}" class="btn btn-secondary" id="hero-admin-btn">
+                    <span>📊</span> Admin Portal
+                </a>
+            </div>
+        </section>
+
+        <!-- LIVE METRICS CARDS -->
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon blue">📋</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ total_count }}</div>
+                    <div class="stat-label">Total Campus Requests</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon amber">⏳</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ active_count }}</div>
+                    <div class="stat-label">Active / In Progress</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon green">✅</div>
+                <div class="stat-info">
+                    <div class="stat-value">{{ resolved_count }}</div>
+                    <div class="stat-label">Resolved Issues</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ISSUE CATEGORIES SECTION -->
+        <div class="section-header">
+            <div>
+                <h2>Campus Maintenance Services</h2>
+                <p>Select a department below or start a custom maintenance ticket</p>
+            </div>
+            <a href="{{ url_for('report') }}" class="btn btn-outline btn-sm">Submit New Ticket &rarr;</a>
+        </div>
+
+        <section class="categories-grid">
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">⚡</span>
+                    <h3>Electrical Systems</h3>
+                </div>
+                <p>Power outages, faulty sockets, flickering lights, laboratory switchboards, and UPS issues.</p>
+                <div class="cat-footer">Report Electrical &rarr;</div>
+            </a>
+
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">🚰</span>
+                    <h3>Plumbing & Water</h3>
+                </div>
+                <p>Restroom leaks, water cooler malfunctions, drainage blocks, and pipe repairs.</p>
+                <div class="cat-footer">Report Plumbing &rarr;</div>
+            </a>
+
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">💻</span>
+                    <h3>Classroom & Lab Equipment</h3>
+                </div>
+                <p>Projector failures, smartboard sync, audio systems, and computer lab workbench repairs.</p>
+                <div class="cat-footer">Report Equipment &rarr;</div>
+            </a>
+
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">📶</span>
+                    <h3>Internet & Wi-Fi</h3>
+                </div>
+                <p>Campus Wi-Fi dead zones, hostel access points, LAN port malfunctions, and router status.</p>
+                <div class="cat-footer">Report Connectivity &rarr;</div>
+            </a>
+
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">🪑</span>
+                    <h3>Furniture & Infrastructure</h3>
+                </div>
+                <p>Broken desks, chairs, lecture hall podiums, door locks, and whiteboard replacements.</p>
+                <div class="cat-footer">Report Furniture &rarr;</div>
+            </a>
+
+            <a href="{{ url_for('report') }}" class="category-card">
+                <div class="cat-header">
+                    <span class="cat-icon">🧹</span>
+                    <h3>Sanitation & Cleaning</h3>
+                </div>
+                <p>Waste management, spill cleanups, laboratory decontamination, and corridor hygiene.</p>
+                <div class="cat-footer">Report Sanitation &rarr;</div>
+            </a>
+        </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <strong>Smart Campus Maintenance Request System</strong> &copy; 2026. All rights reserved.
+                <p style="font-size: 0.8rem; margin-top: 0.25rem;">University Facilities & Infrastructure Operations Division</p>
+            </div>
+            <div class="footer-devops-badge">
+                <span>🚀 DevOps Pipeline:</span>
+                <span>Docker • Jenkins • Pytest • Ansible • SQLite</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Track Request - Smart Campus Maintenance Request System</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <!-- NAVIGATION BAR -->
+    <header class="navbar">
+        <div class="nav-container">
+            <a href="{{ url_for('index') }}" class="brand-link">
+                <div class="brand-icon">🏛️</div>
+                <div class="brand-text">
+                    <h1>CampusFix</h1>
+                    <span>Smart Maintenance System</span>
+                </div>
+            </a>
+            <ul class="nav-links">
+                <li class="nav-item"><a href="{{ url_for('index') }}" id="nav-home">Home</a></li>
+                <li class="nav-item"><a href="{{ url_for('report') }}" id="nav-report">Report Issue</a></li>
+                <li class="nav-item"><a href="{{ url_for('track') }}" class="active" id="nav-track">Track Request</a></li>
+                <li class="nav-item admin-btn"><a href="{{ url_for('admin') }}" id="nav-admin">Admin Dashboard</a></li>
+            </ul>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-wrapper">
+        <!-- FLASH MESSAGES -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            <span>{{ message }}</span>
+                            <button type="button" class="alert-close">&times;</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <!-- SEARCH BOX CARD -->
+        <section class="track-search-card">
+            <h2>Track Campus Maintenance Status</h2>
+            <p style="color: var(--primary-500); font-size: 0.9rem;">
+                Enter your numeric Request ID below to view technician assignment, repair status, and updates.
+            </p>
+            <form action="{{ url_for('track') }}" method="GET" class="search-input-group" id="trackSearchForm">
+                <input type="text"
+                       name="request_id"
+                       class="form-control"
+                       placeholder="Enter Request ID (e.g. 1, 2, or #1)"
+                       value="{{ searched_id if searched_id else '' }}"
+                       required>
+                <button type="submit" class="btn btn-primary" id="track-search-btn">
+                    <span>🔍</span> Track
+                </button>
+            </form>
+        </section>
+
+        <!-- NOT FOUND STATE -->
+        {% if not_found %}
+            <div class="alert alert-warning" style="max-width: 850px; margin: 0 auto 2rem auto;">
+                <span>⚠️ <strong>Request Not Found:</strong> No maintenance ticket exists with ID <strong>#{{ searched_id }}</strong>. Please check your ticket number and try again.</span>
+                <button type="button" class="alert-close">&times;</button>
+            </div>
+        {% endif %}
+
+        <!-- SEARCH RESULT CARD -->
+        {% if request_item %}
+            {% set current_status = request_item['status'] %}
+            <section class="tracking-result-card" id="trackingResult">
+                <div class="track-header">
+                    <div>
+                        <div class="id-badge">Request Ticket #{{ request_item['id'] }}</div>
+                        <div style="font-size: 0.85rem; color: var(--primary-500); margin-top: 0.2rem;">
+                            Submitted on {{ request_item['created_at']|format_datetime }}
+                        </div>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button type="button" class="btn btn-outline btn-sm btn-copy-id" data-id="{{ request_item['id'] }}">
+                            📋 Copy ID
+                        </button>
+                        <span class="badge badge-status-{{ current_status.lower().replace(' ', '-') }}">
+                            ● {{ current_status }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- 4-STEP PROGRESS STEPPER -->
+                <div class="stepper">
+                    <!-- Step 1: Pending -->
+                    <div class="step-item {% if current_status in ['Pending', 'Assigned', 'In Progress', 'Resolved'] %}{% if current_status == 'Pending' %}active{% else %}completed{% endif %}{% endif %}">
+                        <div class="step-circle">{% if current_status != 'Pending' %}✓{% else %}1{% endif %}</div>
+                        <div class="step-label">1. Pending Review</div>
+                    </div>
+
+                    <!-- Step 2: Assigned -->
+                    <div class="step-item {% if current_status in ['Assigned', 'In Progress', 'Resolved'] %}{% if current_status == 'Assigned' %}active{% else %}completed{% endif %}{% endif %}">
+                        <div class="step-circle">{% if current_status in ['In Progress', 'Resolved'] %}✓{% else %}2{% endif %}</div>
+                        <div class="step-label">2. Assigned</div>
+                    </div>
+
+                    <!-- Step 3: In Progress -->
+                    <div class="step-item {% if current_status in ['In Progress', 'Resolved'] %}{% if current_status == 'In Progress' %}active{% else %}completed{% endif %}{% endif %}">
+                        <div class="step-circle">{% if current_status == 'Resolved' %}✓{% else %}3{% endif %}</div>
+                        <div class="step-label">3. In Progress</div>
+                    </div>
+
+                    <!-- Step 4: Resolved -->
+                    <div class="step-item {% if current_status == 'Resolved' %}completed active{% endif %}">
+                        <div class="step-circle">{% if current_status == 'Resolved' %}✓{% else %}4{% endif %}</div>
+                        <div class="step-label">4. Resolved</div>
+                    </div>
+                </div>
+
+                <!-- TICKET DETAILS GRID -->
+                <div class="details-grid">
+                    <div class="detail-item">
+                        <div class="label">Issue Type</div>
+                        <div class="value">{{ request_item['issue_type'] }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="label">Campus Location</div>
+                        <div class="value">{{ request_item['location'] }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="label">Priority</div>
+                        <div class="value">
+                            <span class="badge badge-priority-{{ request_item['priority'].lower() }}">
+                                {{ request_item['priority'] }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="label">Current Status</div>
+                        <div class="value">
+                            <span class="badge badge-status-{{ current_status.lower().replace(' ', '-') }}">
+                                {{ current_status }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- DESCRIPTION -->
+                <div class="description-box">
+                    <div class="label">Issue Description</div>
+                    <p>{{ request_item['description'] }}</p>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                    <a href="{{ url_for('report') }}" class="btn btn-outline btn-sm">
+                        + Submit Another Request
+                    </a>
+                    <a href="{{ url_for('track') }}" class="btn btn-outline btn-sm">
+                        Clear Search
+                    </a>
+                </div>
+            </section>
+        {% elif not not_found and not searched_id %}
+            <!-- HELPER GUIDE CARD -->
+            <div style="max-width: 850px; margin: 0 auto; background: #ffffff; border: 1px dashed var(--border-subtle); border-radius: var(--radius-lg); padding: 2.5rem; text-align: center;">
+                <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎫</div>
+                <h3 style="font-family: var(--font-heading); margin-bottom: 0.5rem; color: var(--primary-900);">How Tracking Works</h3>
+                <p style="color: var(--primary-600); max-width: 550px; margin: 0 auto 1.5rem auto; font-size: 0.9rem;">
+                    When you submit a maintenance request, our system allocates a unique Request ID. You can enter that number above at any time to monitor technician assignments and resolution progress.
+                </p>
+                <a href="{{ url_for('report') }}" class="btn btn-primary btn-sm">
+                    Report an Issue Now &rarr;
+                </a>
+            </div>
+        {% endif %}
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="footer-container">
+            <div>
+                <strong>Smart Campus Maintenance Request System</strong> &copy; 2026. All rights reserved.
+            </div>
+            <div class="footer-devops-badge">
+                <span>Docker • Jenkins • Pytest • Ansible • SQLite</span>
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
