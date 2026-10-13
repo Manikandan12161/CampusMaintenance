@@ -21,7 +21,8 @@
                 <li class="nav-item"><a href="{{ url_for('index') }}" id="nav-home">Home</a></li>
                 <li class="nav-item"><a href="{{ url_for('report') }}" id="nav-report">Report Issue</a></li>
                 <li class="nav-item"><a href="{{ url_for('track') }}" id="nav-track">Track Request</a></li>
-                <li class="nav-item admin-btn"><a href="{{ url_for('admin') }}" class="active" id="nav-admin">Admin Dashboard</a></li>
+                <li class="nav-item"><a href="{{ url_for('admin') }}" class="active" id="nav-admin">Admin Dashboard</a></li>
+                <li class="nav-item admin-btn"><a href="{{ url_for('logout') }}" id="nav-logout">Logout ({{ admin_user }})</a></li>
             </ul>
         </div>
     </header>
@@ -46,9 +47,12 @@
         <div class="section-header">
             <div>
                 <h2>Facilities Management Dashboard</h2>
-                <p>Monitor campus tickets, assign field technicians, and update resolution lifecycle states.</p>
+                <p>👤 Logged in as: <strong>{{ admin_user }}</strong> &bull; Monitor campus tickets, assign field technicians, and update resolution lifecycle states.</p>
             </div>
-            <a href="{{ url_for('report') }}" class="btn btn-primary btn-sm">+ Log New Ticket</a>
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                <a href="{{ url_for('report') }}" class="btn btn-primary btn-sm">+ Log New Ticket</a>
+                <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm" id="btn-logout-header">🚪 Sign Out</a>
+            </div>
         </div>
 
         <!-- 4 REQUIRED SUMMARY CARDS -->

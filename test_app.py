@@ -77,9 +77,26 @@ def test_submit_maintenance_request_and_storage(client):
     assert record['status'] == 'Pending'
 
 
-def test_admin_page_returns_200(client):
-    """Test 6: Verify Admin page (/admin) returns HTTP 200 and displays requests."""
-    # First insert a test ticket
+def test_unauthenticated_admin_redirects_to_login(client):
+    """Test 6: Verify unauthorized access to /admin redirects to login page."""
+    response = client.get('/admin')
+    assert response.status_code == 302
+    assert '/login' in response.headers['Location']
+
+
+def test_admin_login_invalid_credentials(client):
+    """Test 7: Verify login rejection for incorrect credentials."""
+    response = client.post('/login', data={
+        'username': 'wrong_admin',
+        'password': 'bad_password'
+    }, follow_redirects=True)
+    assert response.status_code == 200
+    assert b'Invalid username or password' in response.data
+
+
+def test_admin_login_success_and_access(client):
+    """Test 8: Verify valid admin login grants access to /admin dashboard (HTTP 200)."""
+    # Create a test ticket
     conn = app_module.get_db_connection()
     conn.execute(
         '''
@@ -90,15 +107,35 @@ def test_admin_page_returns_200(client):
     conn.commit()
     conn.close()
 
-    response = client.get('/admin')
-    assert response.status_code == 200
-    assert b'Facilities Management Dashboard' in response.data
-    assert b'Hostel Block A, Washroom 3' in response.data
-    assert b'Plumbing Issue' in response.data
+    # Perform login
+    login_resp = client.post('/login', data={
+        'username': 'admin',
+        'password': 'admin123'
+    }, follow_redirects=True)
+
+    assert login_resp.status_code == 200
+    assert b'Facilities Management Dashboard' in login_resp.data
+    assert b'Hostel Block A, Washroom 3' in login_resp.data
+    assert b'Plumbing Issue' in login_resp.data
+
+
+def test_admin_logout(client):
+    """Test 9: Verify admin logout terminates session."""
+    # Log in first
+    client.post('/login', data={'username': 'admin', 'password': 'admin123'})
+
+    # Log out
+    logout_resp = client.get('/logout', follow_redirects=True)
+    assert logout_resp.status_code == 200
+
+    # Ensure admin dashboard is locked again
+    admin_resp = client.get('/admin')
+    assert admin_resp.status_code == 302
+    assert '/login' in admin_resp.headers['Location']
 
 
 def test_track_page_with_valid_and_invalid_id(client):
-    """Test 7: Verify tracking endpoint for both existing and non-existing tickets."""
+    """Test 10: Verify tracking endpoint for both existing and non-existing tickets."""
     # Insert a record
     conn = app_module.get_db_connection()
     cursor = conn.cursor()
@@ -125,7 +162,7 @@ def test_track_page_with_valid_and_invalid_id(client):
 
 
 def test_update_status_workflow(client):
-    """Test 8: Verify admin can transition request status (Pending -> Assigned -> Resolved)."""
+    """Test 11: Verify status update requires authentication and transitions status."""
     # Create request
     conn = app_module.get_db_connection()
     cursor = conn.cursor()
@@ -138,6 +175,17 @@ def test_update_status_workflow(client):
     conn.commit()
     req_id = cursor.lastrowid
     conn.close()
+
+    # Unauthenticated attempt must be blocked
+    unauth_resp = client.post('/update_status', data={
+        'request_id': req_id,
+        'status': 'In Progress'
+    })
+    assert unauth_resp.status_code == 302
+    assert '/login' in unauth_resp.headers['Location']
+
+    # Log in as admin
+    client.post('/login', data={'username': 'admin', 'password': 'admin123'})
 
     # Update status to 'In Progress'
     update_resp = client.post('/update_status', data={
@@ -154,7 +202,7 @@ def test_update_status_workflow(client):
 
 
 def test_submit_request_validation(client):
-    """Test 9: Verify submission with empty fields fails safely with validation message."""
+    """Test 12: Verify submission with empty fields fails safely with validation message."""
     invalid_payload = {
         'issue_type': '',
         'location': '',

@@ -1,10 +1,15 @@
 import os
 import sqlite3
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
+from functools import wraps
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, session
 
 app = Flask(__name__)
 app.secret_key = os.environ.get('SECRET_KEY', 'campus-maintenance-devops-secret-key-2026')
+
+# Admin Credentials configuration (can be overridden via environment variables)
+ADMIN_USERNAME = os.environ.get('ADMIN_USERNAME', 'admin')
+ADMIN_PASSWORD = os.environ.get('ADMIN_PASSWORD', 'admin123')
 
 # Database configuration: Always use data/campus_maintenance.db
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,6 +29,26 @@ VALID_ISSUE_TYPES = [
 
 VALID_PRIORITIES = ['Low', 'Medium', 'High', 'Urgent']
 VALID_STATUSES = ['Pending', 'Assigned', 'In Progress', 'Resolved']
+
+
+def admin_required(f):
+    """Decorator to protect admin routes requiring authentication."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not session.get('admin_logged_in'):
+            flash('Admin authentication required. Please log in to access the Facilities Dashboard.', 'warning')
+            return redirect(url_for('login', next=request.path))
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+@app.context_processor
+def inject_admin_context():
+    """Make admin authentication state accessible across all templates."""
+    return {
+        'is_admin': session.get('admin_logged_in', False),
+        'admin_user': session.get('admin_user', '')
+    }
 
 
 def get_db_connection():
@@ -180,9 +205,43 @@ def track():
                            not_found=not_found)
 
 
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    """Admin authentication login route."""
+    if session.get('admin_logged_in'):
+        return redirect(url_for('admin'))
+
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+        next_url = request.args.get('next')
+
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            session['admin_logged_in'] = True
+            session['admin_user'] = username
+            flash(f'Welcome, {username}! Admin session authenticated.', 'success')
+            if next_url and next_url.startswith('/'):
+                return redirect(next_url)
+            return redirect(url_for('admin'))
+        else:
+            flash('Invalid username or password. Please verify credentials.', 'danger')
+
+    return render_template('login.html')
+
+
+@app.route('/logout')
+def logout():
+    """Clear admin session and log out."""
+    session.pop('admin_logged_in', None)
+    session.pop('admin_user', None)
+    flash('You have been logged out of the Admin Portal.', 'info')
+    return redirect(url_for('index'))
+
+
 @app.route('/admin')
+@admin_required
 def admin():
-    """Admin dashboard with summary metrics and all maintenance requests."""
+    """Admin dashboard with summary metrics and all maintenance requests (Protected)."""
     conn = get_db_connection()
 
     # Summary metrics
@@ -227,8 +286,9 @@ def admin():
 
 
 @app.route('/update_status', methods=['POST'])
+@admin_required
 def update_status():
-    """Update maintenance request status (Pending -> Assigned -> In Progress -> Resolved)."""
+    """Update maintenance request status (Protected: Admin Only)."""
     request_id = request.form.get('request_id', '').strip()
     new_status = request.form.get('status', '').strip()
 

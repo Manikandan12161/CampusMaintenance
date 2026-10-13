@@ -118,7 +118,8 @@ CampusMaintenance/
 │   ├── index.html             # Campus portal home page & live summary counters
 │   ├── report.html            # Maintenance issue reporting form
 │   ├── track.html             # Request status tracker with 4-step progress stepper
-│   └── admin.html             # Facilities admin dashboard & inline status updater
+│   ├── admin.html             # Facilities admin dashboard & inline status updater
+│   └── login.html             # Restricted Admin authentication login screen
 │
 ├── static/                    # Frontend styling & client logic
 │   ├── style.css              # Custom responsive institutional theme
@@ -148,7 +149,13 @@ CampusMaintenance/
   3. `In Progress / Repair Underway`
   4. `Resolved`
 
-### Facility Admin Features
+### Facility Admin Features (Protected with Authentication)
+- **Role-Based Access Control**:
+  - Only authenticated administrators can access `/admin` and modify ticket statuses via `/update_status`.
+  - Unauthenticated access attempts automatically redirect to `/login` with a security warning.
+  - **Default Evaluation Credentials**:
+    - **Username**: `admin`
+    - **Password**: `admin123`
 - **4 Key Summary KPI Cards**:
   - **Total Requests**
   - **Pending**
@@ -157,6 +164,7 @@ CampusMaintenance/
 - **Dynamic Filter Pills**: Instantly isolate tickets by status (*All, Pending, Assigned, In Progress, Resolved*).
 - **Client-Side Live Filter**: Search by keyword, building, or room number without reloading the page.
 - **Inline Status Transitions**: Dropdown allowing admins to update status between any lifecycle state with immediate SQLite persistence.
+- **Session Logout**: One-click session termination (`/logout`) returning to public mode.
 
 ---
 
